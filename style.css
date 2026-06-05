@@ -143,3 +143,38 @@
     width: 100%;
     margin: 0.25em 0;
 }
+
+/* Prompt syntax highlight overlay */
+label.gen-layout-prompt-highlight-wrap {
+    position: relative;
+    display: block;
+}
+
+.gen-layout-prompt-highlight-backdrop {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    color: var(--body-text-color, var(--neutral-100, #eee));
+    background: transparent;
+    border-color: transparent;
+}
+
+label.gen-layout-prompt-highlight-wrap textarea {
+    position: relative;
+    background: transparent !important;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent;
+    caret-color: var(--body-text-color, var(--neutral-100, #eee));
+}
+
+.gen-layout-prompt-wildcard {
+    color: #ff9800;
+}
+
+.gen-layout-prompt-lora {
+    color: #26c6da;
+}
