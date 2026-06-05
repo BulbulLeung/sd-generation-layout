@@ -11,6 +11,34 @@
     };
 
     const TAB_NAMES = ["txt2img", "img2img"];
+    const WILDCARD_DEFAULT_WRAP = "__";
+    const WILDCARD_SEPARATOR = ", ";
+
+    function getTextSeparator() {
+        if (
+            typeof opts !== "undefined" &&
+            opts.extra_networks_add_text_separator != null
+        ) {
+            return String(opts.extra_networks_add_text_separator);
+        }
+        return ", ";
+    }
+
+    function getWildcardWrap() {
+        if (
+            typeof opts !== "undefined" &&
+            opts.dp_parser_wildcard_wrap != null &&
+            String(opts.dp_parser_wildcard_wrap).length > 0
+        ) {
+            return String(opts.dp_parser_wildcard_wrap);
+        }
+        return WILDCARD_DEFAULT_WRAP;
+    }
+
+    function wildcardTokenFromName(name) {
+        const wrap = getWildcardWrap();
+        return wrap + name + wrap;
+    }
 
     function getPromptTextarea(id) {
         const app = gradioApp();
@@ -44,6 +72,133 @@
         }
 
         return textarea.id.includes("neg");
+    }
+
+    function getPromptInsertIndex(textarea) {
+        const value = textarea.value;
+        const cursor =
+            typeof textarea.selectionStart === "number"
+                ? textarea.selectionStart
+                : value.length;
+        const lineStart = value.lastIndexOf("\n", cursor - 1) + 1;
+        const linePrefix = value.slice(lineStart, cursor);
+        const commaIdx = linePrefix.lastIndexOf(",");
+        if (commaIdx >= 0) {
+            let pos = lineStart + commaIdx + 1;
+            while (pos < value.length && value[pos] === " ") {
+                pos++;
+            }
+            return pos;
+        }
+        return cursor;
+    }
+
+    function endsWithCommaSegment(text) {
+        return /,\s*$/.test(text);
+    }
+
+    function insertPromptText(textarea, text, isNeg) {
+        if (
+            typeof tryToRemoveExtraNetworkFromPrompt === "function" &&
+            tryToRemoveExtraNetworkFromPrompt(textarea, text, isNeg)
+        ) {
+            updateInput(textarea);
+            return;
+        }
+
+        const value = textarea.value;
+        const cursor =
+            typeof textarea.selectionStart === "number"
+                ? textarea.selectionStart
+                : value.length;
+        const insertAt = getPromptInsertIndex(textarea);
+        const before = value.slice(0, insertAt);
+        const after = value.slice(insertAt);
+        const sep = getTextSeparator();
+        const snappedToComma = insertAt !== cursor;
+
+        let insert = text;
+
+        if (before.length > 0 && (snappedToComma || after.length === 0)) {
+            if (!before.endsWith(",") && !endsWithCommaSegment(before)) {
+                insert = sep + insert;
+            }
+        }
+
+        if (after.length > 0 && (snappedToComma || before.length === 0)) {
+            if (!/^\s*,/.test(after)) {
+                insert = insert + sep;
+            }
+        }
+
+        textarea.value = before + insert + after;
+        const caret = before.length + insert.length;
+        textarea.selectionStart = caret;
+        textarea.selectionEnd = caret;
+        updateInput(textarea);
+    }
+
+    function promptContainsWildcardToken(prompt, token) {
+        return prompt.indexOf(token) >= 0;
+    }
+
+    function removeWildcardTokenFromPrompt(prompt, token) {
+        if (!promptContainsWildcardToken(prompt, token)) {
+            return prompt;
+        }
+
+        const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const patterns = [
+            new RegExp(escaped + "\\s*,\\s*", "g"),
+            new RegExp(escaped, "g"),
+        ];
+
+        let result = prompt;
+        for (let i = 0; i < patterns.length; i++) {
+            const next = result.replace(patterns[i], "");
+            if (next !== result) {
+                result = next;
+                break;
+            }
+        }
+
+        return result.replace(/\s{2,}/g, " ").trim();
+    }
+
+    function formatWildcardInsert(token) {
+        if (endsWithCommaSegment(token)) {
+            return token;
+        }
+        return token + WILDCARD_SEPARATOR;
+    }
+
+    function recalculatePrompts(tabname) {
+        if (
+            tabname === "txt2img" &&
+            typeof recalculate_prompts_txt2img === "function"
+        ) {
+            recalculate_prompts_txt2img();
+        } else if (
+            tabname === "img2img" &&
+            typeof recalculate_prompts_img2img === "function"
+        ) {
+            recalculate_prompts_img2img();
+        }
+    }
+
+    function toggleWildcardToken(tabname, token) {
+        const textarea = getActivePromptTextarea(tabname);
+        if (!textarea || !token) return;
+
+        const current = textarea.value || "";
+        if (promptContainsWildcardToken(current, token)) {
+            textarea.value = removeWildcardTokenFromPrompt(current, token);
+            updateInput(textarea);
+        } else {
+            insertPromptText(textarea, formatWildcardInsert(token), false);
+        }
+
+        recalculatePrompts(tabname);
     }
 
     function setupPromptFocusTracking() {
@@ -103,17 +258,63 @@
                     ? textToAddNegative
                     : textToAdd;
 
-            updatePromptArea(text, textarea, isNeg);
+            insertPromptText(textarea, text, isNeg);
         };
         patched._genLayoutFocusPatched = true;
         window.cardClicked = patched;
     }
 
+    function wildcardTabnameFromContainer(container) {
+        if (!container || !container.id) return null;
+        const match = container.id.match(/^(txt2img|img2img)_wildcard_cards$/);
+        return match ? match[1] : null;
+    }
+
+    function onWildcardCardClick(event) {
+        const card = event.target.closest(".card");
+        if (!card) return;
+
+        const container = card.closest('[id$="_wildcard_cards"]');
+        if (!container) return;
+
+        if (event.target.closest(".button-row")) return;
+
+        const tabname = wildcardTabnameFromContainer(container);
+        const name = card.getAttribute("data-name");
+        if (!tabname || !name) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        const token = wildcardTokenFromName(name);
+        toggleWildcardToken(tabname, token);
+    }
+
+    function setupWildcardInsertPatch() {
+        const app = gradioApp();
+        if (!app) return;
+
+        for (const tab of TAB_NAMES) {
+            const container = app.querySelector("#" + tab + "_wildcard_cards");
+            if (!container || container.dataset.genLayoutWildcardInsert === "1") {
+                continue;
+            }
+
+            container.dataset.genLayoutWildcardInsert = "1";
+            container.addEventListener("click", onWildcardCardClick, true);
+        }
+    }
+
     function initPromptFocus() {
         patchCardClicked();
         setupPromptFocusTracking();
+        setupWildcardInsertPatch();
     }
 
     onUiLoaded(initPromptFocus);
-    onAfterUiUpdate(setupPromptFocusTracking);
+    onAfterUiUpdate(function () {
+        setupPromptFocusTracking();
+        setupWildcardInsertPatch();
+    });
 })();
