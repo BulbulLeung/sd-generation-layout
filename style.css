@@ -1,0 +1,145 @@
+/* Generation layout extension */
+
+/* Prompt (left) and negative prompt (right) side by side */
+.gen-layout-prompts-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.5em;
+    flex-wrap: nowrap;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+.gen-layout-prompts-row > [id$="_prompt_row"],
+.gen-layout-prompts-row > [id$="_neg_prompt_row"] {
+    flex: 1 1 50%;
+    min-width: 0;
+    width: auto;
+}
+
+/* 2x default prompt height (core UI: lines=3 / scroll mode 6em) */
+.gen-layout-prompts-row div.gradio-textbox.prompt {
+    min-height: 12em;
+}
+
+.gen-layout-prompts-row div.gradio-textbox.prompt textarea {
+    min-height: 12em !important;
+    height: 12em !important;
+}
+
+#txt2img_prompt_container.prompt-container-scroll .gen-layout-prompts-row div.gradio-textbox.prompt,
+#img2img_prompt_container.prompt-container-scroll .gen-layout-prompts-row div.gradio-textbox.prompt {
+    height: 12em !important;
+    overflow-y: auto !important;
+}
+
+/* Remove flex space reserved by empty Gradio columns (size / batch); direct children only */
+[id$="_settings"] .form:has(> .gen-layout-dimensions-row) > [id$="_column_size"]:not(:has(#img2img_tabs_resize)),
+[id$="_settings"] .form:has(> .gen-layout-dimensions-row) > [id$="_column_batch"],
+[id$="_settings"] .row:has(> .gen-layout-dimensions-row) > [id$="_column_size"]:not(:has(#img2img_tabs_resize)),
+[id$="_settings"] .row:has(> .gen-layout-dimensions-row) > [id$="_column_batch"] {
+    display: none !important;
+    flex: 0 0 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+}
+
+.gen-layout-dimensions-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 0.5em;
+    flex-wrap: nowrap;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+.gen-layout-dimensions-row > .block {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+}
+
+.gen-layout-dimensions-row > div[id$="_dimensions_row"].dimensions-tools {
+    flex: 0 0 auto;
+    min-width: 1.6em !important;
+    max-width: fit-content;
+    width: auto;
+    flex-direction: row;
+    place-content: center;
+    align-self: center;
+    margin-bottom: 0.9em;
+}
+
+/* img2img: keep Resize to / Resize by tabs; horizontal controls inside Resize to */
+.gen-layout-dimensions-row--img2img {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.gen-layout-dimensions-row--img2img > #img2img_tabs_resize {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Resize to tab: same horizontal layout as txt2img, kept inside the tab panel */
+.gen-layout-img2img-resize-to-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 0.5em;
+    flex-wrap: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.gen-layout-img2img-resize-to-row > .block {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+}
+
+.gen-layout-img2img-resize-to-row > div[id="img2img_dimensions_row"].dimensions-tools {
+    flex: 0 0 auto;
+    min-width: 1.6em !important;
+    max-width: fit-content;
+    width: auto;
+    flex-direction: row;
+    place-content: center;
+    align-self: center;
+    margin-bottom: 0.9em;
+}
+
+.gen-layout-cfg-batch-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 0.5em;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.gen-layout-cfg-batch-row > .block {
+    flex: 1 1 min(13em, 100%);
+    min-width: min(13em, 100%);
+}
+
+#txt2img_settings > #txt2img_hr,
+#txt2img_settings > #txt2img_hr.input-accordion,
+#txt2img_settings > [id*="adetailer" i].input-accordion {
+    width: 100%;
+    margin: 0.25em 0;
+}
