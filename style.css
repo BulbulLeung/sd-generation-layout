@@ -27,7 +27,10 @@
 
 .gen-layout-prompts-row div.gradio-textbox.prompt textarea {
     min-height: 12em !important;
-    height: 12em !important;
+    height: 12em;
+    resize: vertical;
+    overflow-y: auto;
+    field-sizing: fixed;
 }
 
 #txt2img_prompt_container.prompt-container-scroll .gen-layout-prompts-row div.gradio-textbox.prompt,
@@ -146,29 +149,66 @@
 
 /* Prompt syntax highlight overlay */
 label.gen-layout-prompt-highlight-wrap {
-    position: relative;
     display: block;
+    width: 100%;
+}
+
+.gen-layout-prompt-highlight-layer {
+    display: grid;
+    width: 100%;
+    min-height: 0;
+    background: var(--input-background-fill);
+    border: var(--input-border-width) solid var(--input-border-color);
+    border-radius: var(--input-radius);
+    box-shadow: var(--input-shadow);
+    overflow: hidden;
+}
+
+label.gen-layout-prompt-highlight-wrap:focus-within .gen-layout-prompt-highlight-layer {
+    border-color: var(--input-border-color-focus, var(--input-border-color));
+    box-shadow: var(--input-shadow-focus, var(--input-shadow));
+}
+
+.gen-layout-prompt-highlight-layer > * {
+    grid-area: 1 / 1 / 2 / 2;
 }
 
 .gen-layout-prompt-highlight-backdrop {
-    position: absolute;
-    inset: 0;
     pointer-events: none;
     overflow: hidden;
+    background: transparent;
+    border-color: transparent;
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+}
+
+.gen-layout-prompt-highlight-backdrop .inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-wrap: break-word;
     color: var(--body-text-color, var(--neutral-100, #eee));
-    background: transparent;
-    border-color: transparent;
+    will-change: transform;
 }
 
 label.gen-layout-prompt-highlight-wrap textarea {
-    position: relative;
     background: transparent !important;
     color: transparent !important;
     -webkit-text-fill-color: transparent;
     caret-color: var(--body-text-color, var(--neutral-100, #eee));
+    border-color: transparent !important;
+    box-shadow: none !important;
+    outline: none;
+    resize: vertical;
+    overflow-y: auto;
+    field-sizing: fixed;
+    height: 12em;
+    min-height: 12em;
 }
 
 .gen-layout-prompt-wildcard {

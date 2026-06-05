@@ -31,8 +31,25 @@
         "borderRightWidth",
         "borderBottomWidth",
         "borderLeftWidth",
+        "borderStyle",
+        "borderTopColor",
+        "borderRightColor",
+        "borderBottomColor",
+        "borderLeftColor",
         "boxSizing",
         "tabSize",
+        "width",
+        "whiteSpace",
+        "wordBreak",
+        "overflowWrap",
+    ];
+
+    const LAYER_STYLE_PROPS = [
+        "borderRadius",
+        "borderTopLeftRadius",
+        "borderTopRightRadius",
+        "borderBottomRightRadius",
+        "borderBottomLeftRadius",
     ];
 
     const boundHighlights = [];
@@ -146,57 +163,126 @@
         return html;
     }
 
-    function syncBackdropStyles(textarea, backdrop) {
+    function getScrollTargets(textarea) {
+        const targets = [textarea];
+        const textbox = textarea.closest(".gradio-textbox.prompt");
+        if (!textbox) return targets;
+
+        const overflowY = getComputedStyle(textbox).overflowY;
+        if (
+            (overflowY === "auto" || overflowY === "scroll") &&
+            !targets.includes(textbox)
+        ) {
+            targets.push(textbox);
+        }
+        return targets;
+    }
+
+    function syncLayerStyles(textarea, layer) {
+        if (!layer) return;
         const cs = getComputedStyle(textarea);
-        for (const prop of STYLE_PROPS) {
-            backdrop.style[prop] = cs[prop];
+        for (const prop of LAYER_STYLE_PROPS) {
+            layer.style[prop] = cs[prop];
         }
     }
 
-    function syncBackdropScroll(textarea, backdrop) {
-        backdrop.style.transform = `translate(${-textarea.scrollLeft}px, ${-textarea.scrollTop}px)`;
+    function syncInnerStyles(textarea, inner) {
+        const cs = getComputedStyle(textarea);
+        for (const prop of STYLE_PROPS) {
+            inner.style[prop] = cs[prop];
+        }
+        inner.style.removeProperty("color");
     }
 
-    function refreshHighlight(textarea, backdrop, isNegative) {
-        syncBackdropStyles(textarea, backdrop);
-        backdrop.innerHTML = buildHighlightedHtml(textarea.value, isNegative);
-        syncBackdropScroll(textarea, backdrop);
+    function syncBackdropScroll(textarea, inner) {
+        inner.style.transform = `translate(${-textarea.scrollLeft}px, ${-textarea.scrollTop}px)`;
+    }
+
+    function refreshHighlight(textarea, inner, layer, isNegative) {
+        syncLayerStyles(textarea, layer);
+        syncInnerStyles(textarea, inner);
+        inner.innerHTML = buildHighlightedHtml(textarea.value, isNegative);
+        syncBackdropScroll(textarea, inner);
+    }
+
+    function findPromptTextarea(app, id) {
+        const root = app.querySelector(`#${id}`);
+        if (!root) return null;
+        return root.querySelector(
+            ":scope > label > textarea, :scope > label > .gen-layout-prompt-highlight-layer > textarea",
+        );
     }
 
     function setupPromptHighlight(id) {
         const app = gradioApp();
         if (!app) return;
 
-        const textarea = app.querySelector(`#${id} > label > textarea`);
+        const textarea = findPromptTextarea(app, id);
         if (!textarea) return;
 
-        const label = textarea.parentElement;
+        const label = textarea.closest("label");
         if (!label || label.dataset.genLayoutPromptHighlight === "1") return;
+
+        let layer = textarea.closest(".gen-layout-prompt-highlight-layer");
 
         const backdrop = document.createElement("div");
         backdrop.className = "gen-layout-prompt-highlight-backdrop";
         backdrop.setAttribute("aria-hidden", "true");
 
+        const inner = document.createElement("div");
+        inner.className = "inner";
+        backdrop.appendChild(inner);
+
         label.classList.add("gen-layout-prompt-highlight-wrap");
-        label.insertBefore(backdrop, textarea);
         label.dataset.genLayoutPromptHighlight = "1";
 
+        if (!layer && textarea.parentElement === label) {
+            layer = document.createElement("div");
+            layer.className = "gen-layout-prompt-highlight-layer";
+            layer.appendChild(backdrop);
+            layer.appendChild(textarea);
+            label.appendChild(layer);
+        } else if (layer) {
+            layer.insertBefore(backdrop, textarea);
+        } else {
+            return;
+        }
+
         const isNegative = isNegativePromptId(id);
+        const scrollTargets = getScrollTargets(textarea);
 
         const update = function () {
-            refreshHighlight(textarea, backdrop, isNegative);
+            refreshHighlight(textarea, inner, layer, isNegative);
         };
 
         textarea.addEventListener("input", update);
-        textarea.addEventListener("scroll", update);
+        for (const target of scrollTargets) {
+            target.addEventListener("scroll", update);
+        }
 
-        boundHighlights.push({ textarea, backdrop, isNegative, update });
+        if (typeof ResizeObserver !== "undefined") {
+            const resizeObserver = new ResizeObserver(update);
+            resizeObserver.observe(textarea);
+            boundHighlights.push({
+                textarea,
+                inner,
+                layer,
+                isNegative,
+                update,
+                resizeObserver,
+            });
+        } else {
+            boundHighlights.push({ textarea, inner, layer, isNegative, update });
+        }
+
         update();
     }
 
     function setupAllPromptHighlights() {
         for (let i = boundHighlights.length - 1; i >= 0; i--) {
-            if (!boundHighlights[i].textarea.isConnected) {
+            const entry = boundHighlights[i];
+            if (!entry.textarea.isConnected) {
+                entry.resizeObserver?.disconnect();
                 boundHighlights.splice(i, 1);
             }
         }
