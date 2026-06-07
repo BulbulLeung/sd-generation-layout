@@ -74,7 +74,7 @@
         return textarea.id.includes("neg");
     }
 
-    function getPromptInsertIndex(textarea) {
+    function getPromptInsertContext(textarea) {
         const value = textarea.value;
         const cursor =
             typeof textarea.selectionStart === "number"
@@ -88,9 +88,9 @@
             while (pos < value.length && value[pos] === " ") {
                 pos++;
             }
-            return pos;
+            return { insertAt: pos, mode: "afterComma", cursor: cursor };
         }
-        return cursor;
+        return { insertAt: lineStart, mode: "lineStart", cursor: cursor };
     }
 
     function endsWithCommaSegment(text) {
@@ -107,27 +107,28 @@
         }
 
         const value = textarea.value;
-        const cursor =
-            typeof textarea.selectionStart === "number"
-                ? textarea.selectionStart
-                : value.length;
-        const insertAt = getPromptInsertIndex(textarea);
+        const { insertAt, mode, cursor } = getPromptInsertContext(textarea);
         const before = value.slice(0, insertAt);
         const after = value.slice(insertAt);
         const sep = getTextSeparator();
-        const snappedToComma = insertAt !== cursor;
 
         let insert = text;
 
-        if (before.length > 0 && (snappedToComma || after.length === 0)) {
-            if (!before.endsWith(",") && !endsWithCommaSegment(before)) {
-                insert = sep + insert;
-            }
-        }
+        if (mode === "lineStart") {
+            insert = insert + sep;
+        } else {
+            const snappedToComma = insertAt !== cursor;
 
-        if (after.length > 0 && (snappedToComma || before.length === 0)) {
-            if (!/^\s*,/.test(after)) {
-                insert = insert + sep;
+            if (before.length > 0 && (snappedToComma || after.length === 0)) {
+                if (!before.endsWith(",") && !endsWithCommaSegment(before)) {
+                    insert = sep + insert;
+                }
+            }
+
+            if (after.length > 0 && (snappedToComma || before.length === 0)) {
+                if (!/^\s*,/.test(after)) {
+                    insert = insert + sep;
+                }
             }
         }
 
