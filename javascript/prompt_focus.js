@@ -143,27 +143,202 @@
         return prompt.indexOf(token) >= 0;
     }
 
-    function removeWildcardTokenFromPrompt(prompt, token) {
-        if (!promptContainsWildcardToken(prompt, token)) {
-            return prompt;
+    function getLineIndexForPos(text, pos) {
+        if (pos <= 0) {
+            return 0;
+        }
+        return text.slice(0, pos).split("\n").length - 1;
+    }
+
+    function removeTokenFromLine(line, token) {
+        if (!promptContainsWildcardToken(line, token)) {
+            return {
+                line: line,
+                removedStart: -1,
+                removedEnd: -1,
+            };
         }
 
         const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const patterns = [
-            new RegExp(escaped + "\\s*,\\s*", "g"),
-            new RegExp(escaped, "g"),
+            new RegExp(escaped + "[ \\t]*,[ \\t]*"),
+            new RegExp(escaped),
         ];
 
-        let result = prompt;
+        let result = line;
+        let removedStart = -1;
+        let removedEnd = -1;
+
         for (let i = 0; i < patterns.length; i++) {
-            const next = result.replace(patterns[i], "");
-            if (next !== result) {
-                result = next;
+            const match = patterns[i].exec(line);
+            if (match) {
+                removedStart = match.index;
+                removedEnd = match.index + match[0].length;
+                result = line.replace(patterns[i], "");
                 break;
             }
         }
 
-        return result.replace(/\s{2,}/g, " ").trim();
+        result = result.replace(/[ \t]{2,}/g, " ").trimEnd();
+        if (result.length > 0 && !result.endsWith(",")) {
+            result += ",";
+        }
+
+        return {
+            line: result,
+            removedStart: removedStart,
+            removedEnd: removedEnd,
+        };
+    }
+
+    function mapCaretInLine(
+        oldLine,
+        newLine,
+        posInLine,
+        removedStart,
+        removedEnd,
+    ) {
+        if (removedStart < 0) {
+            return Math.min(Math.max(0, posInLine), newLine.length);
+        }
+
+        if (posInLine >= oldLine.length) {
+            return newLine.length;
+        }
+
+        let pos = posInLine;
+        if (pos <= removedStart) {
+            pos = posInLine;
+        } else if (pos >= removedEnd) {
+            pos -= removedEnd - removedStart;
+        } else {
+            pos = removedStart;
+        }
+
+        return Math.max(0, Math.min(pos, newLine.length));
+    }
+
+    function findTokenLine(lines, token, cursorLine) {
+        let fallbackLine = -1;
+
+        for (let i = 0; i < lines.length; i++) {
+            if (!promptContainsWildcardToken(lines[i], token)) {
+                continue;
+            }
+            if (i === cursorLine) {
+                return i;
+            }
+            if (fallbackLine < 0) {
+                fallbackLine = i;
+            }
+        }
+
+        return fallbackLine;
+    }
+
+    function mapSelectionAfterRemove(
+        lines,
+        processed,
+        selectionPos,
+        tokenLine,
+        cursorLine,
+    ) {
+        let oldPos = 0;
+        let newPos = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+            const oldLine = lines[i];
+            const entry = processed[i];
+            const newLine = entry.line;
+
+            if (i === tokenLine) {
+                const posInLine =
+                    cursorLine === tokenLine
+                        ? selectionPos - oldPos
+                        : entry.removedStart >= 0
+                          ? entry.removedStart
+                          : 0;
+                return (
+                    newPos +
+                    mapCaretInLine(
+                        oldLine,
+                        newLine,
+                        posInLine,
+                        entry.removedStart,
+                        entry.removedEnd,
+                    )
+                );
+            }
+
+            oldPos += oldLine.length + (i < lines.length - 1 ? 1 : 0);
+            newPos += newLine.length + (i < processed.length - 1 ? 1 : 0);
+        }
+
+        return newPos;
+    }
+
+    function removeWildcardTokenFromPromptWithCaret(
+        prompt,
+        token,
+        selectionStart,
+        selectionEnd,
+    ) {
+        if (!promptContainsWildcardToken(prompt, token)) {
+            return {
+                text: prompt,
+                caret: selectionStart,
+                caretEnd: selectionEnd,
+            };
+        }
+
+        const normalized = prompt.replace(/\r\n/g, "\n");
+        const lines = normalized.split("\n");
+        const cursorLine = getLineIndexForPos(normalized, selectionStart);
+        const tokenLine = findTokenLine(lines, token, cursorLine);
+
+        const processed = lines.map(function (line) {
+            return removeTokenFromLine(line, token);
+        });
+        const newLines = processed.map(function (entry) {
+            return entry.line;
+        });
+        const text = newLines.join("\n");
+
+        let caret = mapSelectionAfterRemove(
+            lines,
+            processed,
+            selectionStart,
+            tokenLine,
+            cursorLine,
+        );
+        let caretEnd = mapSelectionAfterRemove(
+            lines,
+            processed,
+            selectionEnd,
+            tokenLine,
+            cursorLine,
+        );
+
+        caret = Math.max(0, Math.min(caret, text.length));
+        caretEnd = Math.max(0, Math.min(caretEnd, text.length));
+        if (caretEnd < caret) {
+            caretEnd = caret;
+        }
+
+        return {
+            text: text,
+            caret: caret,
+            caretEnd: caretEnd,
+        };
+    }
+
+    function removeWildcardTokenFromPrompt(prompt, token) {
+        return removeWildcardTokenFromPromptWithCaret(
+            prompt,
+            token,
+            prompt.length,
+            prompt.length,
+        ).text;
     }
 
     function formatWildcardInsert(token) {
@@ -193,7 +368,24 @@
 
         const current = textarea.value || "";
         if (promptContainsWildcardToken(current, token)) {
-            textarea.value = removeWildcardTokenFromPrompt(current, token);
+            const selStart =
+                typeof textarea.selectionStart === "number"
+                    ? textarea.selectionStart
+                    : current.length;
+            const selEnd =
+                typeof textarea.selectionEnd === "number"
+                    ? textarea.selectionEnd
+                    : selStart;
+            const result = removeWildcardTokenFromPromptWithCaret(
+                current,
+                token,
+                selStart,
+                selEnd,
+            );
+            textarea.value = result.text;
+            textarea.focus();
+            textarea.selectionStart = result.caret;
+            textarea.selectionEnd = result.caretEnd;
             updateInput(textarea);
         } else {
             insertPromptText(textarea, formatWildcardInsert(token), false);
