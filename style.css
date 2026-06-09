@@ -25,17 +25,50 @@
     min-height: 12em;
 }
 
-.gen-layout-prompts-row div.gradio-textbox.prompt textarea {
+.gen-layout-prompts-row div.gradio-textbox.prompt textarea,
+.gen-layout-prompts-row label.gen-layout-prompt-highlight-wrap textarea {
     min-height: 12em !important;
-    height: 12em;
     resize: vertical;
-    overflow-y: auto;
-    field-sizing: fixed;
+    overflow-y: scroll !important;
+    field-sizing: fixed !important;
+    box-sizing: border-box;
+    scrollbar-gutter: stable;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(140, 140, 140, 0.9) var(--input-background-fill, #2a2a2a);
+    position: relative;
+    z-index: 2;
+}
+
+.gen-layout-prompts-row label.gen-layout-prompt-highlight-wrap textarea::-webkit-scrollbar {
+    width: 10px;
+}
+
+.gen-layout-prompts-row label.gen-layout-prompt-highlight-wrap textarea::-webkit-scrollbar-track {
+    background: var(--input-background-fill, #2a2a2a);
+}
+
+.gen-layout-prompts-row label.gen-layout-prompt-highlight-wrap textarea::-webkit-scrollbar-thumb {
+    background: rgba(140, 140, 140, 0.9);
+    border-radius: 5px;
+}
+
+.gen-layout-prompts-row .gen-layout-prompt-highlight-layer {
+    min-height: 12em;
+    overflow: visible;
+    box-sizing: border-box;
+}
+
+.gen-layout-prompts-row div.gradio-textbox.prompt {
+    overflow: visible;
+}
+
+.gen-layout-prompts-row label.gen-layout-prompt-highlight-wrap textarea {
+    height: auto;
 }
 
 #txt2img_prompt_container.prompt-container-scroll .gen-layout-prompts-row div.gradio-textbox.prompt,
 #img2img_prompt_container.prompt-container-scroll .gen-layout-prompts-row div.gradio-textbox.prompt {
-    height: 12em !important;
+    min-height: 12em;
     overflow-y: auto !important;
 }
 
@@ -210,6 +243,7 @@ label.gen-layout-prompt-highlight-wrap textarea {
     height: 12em;
     min-height: 12em;
 }
+
 
 .gen-layout-prompt-wildcard {
     color: #ff9800;

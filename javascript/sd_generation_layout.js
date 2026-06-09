@@ -2,6 +2,7 @@
     "use strict";
 
     const TABS = ["txt2img", "img2img"];
+    const lockedPromptTextareas = [];
 
     function getBlock(elemId) {
         const el = gradioApp().getElementById(elemId);
@@ -348,6 +349,188 @@
         tightenDimensionsRow(row);
     }
 
+    function lockPromptAutoGrow(tab) {
+        const row = gradioApp().querySelector(`.gen-layout-prompts-row[data-tab="${tab}"]`);
+        if (!row) return;
+
+        for (let i = lockedPromptTextareas.length - 1; i >= 0; i--) {
+            const entry = lockedPromptTextareas[i];
+            if (!entry.textarea.isConnected) {
+                entry.textarea.removeEventListener("input", entry.onInputCapture, true);
+                entry.textarea.removeEventListener("input", entry.onInput);
+                entry.textarea.removeEventListener("scroll", entry.onScroll);
+                entry.textarea.removeEventListener("mousedown", entry.onMouseDown);
+                entry.textarea.removeEventListener("mouseup", entry.onMouseUp);
+                document.removeEventListener("mouseup", entry.onMouseUp);
+                entry.resizeObserver?.disconnect();
+                entry.styleObserver?.disconnect();
+                lockedPromptTextareas.splice(i, 1);
+            }
+        }
+
+        for (const textarea of row.querySelectorAll("textarea")) {
+            if (textarea.dataset.genLayoutAutoGrowLocked === "1") continue;
+
+            let stableHeight = textarea.getBoundingClientRect().height;
+            if (stableHeight <= 0) {
+                const minH = parseFloat(getComputedStyle(textarea).minHeight);
+                if (!isNaN(minH) && minH > 0) stableHeight = minH;
+            }
+            if (
+                stableHeight <= 0 ||
+                (textarea.offsetHeight <= 0 && textarea.getBoundingClientRect().height <= 0)
+            ) {
+                continue;
+            }
+
+            textarea.dataset.genLayoutAutoGrowLocked = "1";
+            let clamping = false;
+            let inputPending = false;
+            let userResizing = false;
+            let pendingWasNearBottom = true;
+            let userHasScrolledUp = false;
+            let previousScrollTop = textarea.scrollTop;
+
+            const syncHighlightLayer = function () {
+                const layer = textarea.closest(".gen-layout-prompt-highlight-layer");
+                if (!layer) return;
+                layer.style.height = stableHeight + "px";
+                layer.style.removeProperty("max-height");
+            };
+
+            const enforcePromptHeight = function () {
+                clamping = true;
+                textarea.style.setProperty("height", stableHeight + "px", "important");
+                textarea.style.removeProperty("max-height");
+                textarea.style.setProperty("overflow-y", "scroll", "important");
+                syncHighlightLayer();
+                clamping = false;
+            };
+
+            const updateOverflowAndScroll = function (wasNearBottom) {
+                textarea.style.setProperty("overflow-y", "scroll", "important");
+
+                if (!userHasScrolledUp && wasNearBottom) {
+                    textarea.scrollTop = textarea.scrollHeight;
+                }
+            };
+
+            const onScroll = function () {
+                const currentScrollTop = textarea.scrollTop;
+                if (currentScrollTop < previousScrollTop) {
+                    userHasScrolledUp = true;
+                }
+                previousScrollTop = currentScrollTop;
+
+                const maxScrollTop = textarea.scrollHeight - textarea.clientHeight;
+                if (currentScrollTop >= maxScrollTop) {
+                    userHasScrolledUp = false;
+                }
+            };
+
+            const runInputLock = function () {
+                const lockHeight = stableHeight;
+                pendingWasNearBottom =
+                    textarea.offsetHeight + textarea.scrollTop > textarea.scrollHeight - 100;
+                stableHeight = lockHeight;
+                enforcePromptHeight();
+                updateOverflowAndScroll(pendingWasNearBottom);
+            };
+
+            const onInputCapture = function () {
+                inputPending = true;
+                runInputLock();
+            };
+
+            const onInput = function () {
+                inputPending = true;
+
+                runInputLock();
+                queueMicrotask(function () {
+                    if (!inputPending) return;
+                    runInputLock();
+                });
+                requestAnimationFrame(function () {
+                    runInputLock();
+                    inputPending = false;
+                });
+            };
+
+            const onMouseDown = function (e) {
+                const rect = textarea.getBoundingClientRect();
+                if (
+                    e.clientX >= rect.right - 20 &&
+                    e.clientY >= rect.bottom - 20 &&
+                    e.clientX <= rect.right &&
+                    e.clientY <= rect.bottom
+                ) {
+                    userResizing = true;
+                }
+            };
+
+            const onMouseUp = function () {
+                if (!userResizing) return;
+                userResizing = false;
+                const h = textarea.getBoundingClientRect().height;
+                if (h > 0) stableHeight = h;
+                enforcePromptHeight();
+                updateOverflowAndScroll(true);
+            };
+
+            textarea.addEventListener("input", onInputCapture, true);
+            textarea.addEventListener("input", onInput);
+            textarea.addEventListener("scroll", onScroll);
+            textarea.addEventListener("mousedown", onMouseDown);
+            textarea.addEventListener("mouseup", onMouseUp);
+            document.addEventListener("mouseup", onMouseUp);
+            enforcePromptHeight();
+            updateOverflowAndScroll(true);
+
+            let styleObserver = null;
+            if (typeof MutationObserver !== "undefined") {
+                styleObserver = new MutationObserver(function () {
+                    if (!inputPending || clamping || userResizing) return;
+                    if (textarea.offsetHeight <= stableHeight + 1) return;
+                    runInputLock();
+                });
+                styleObserver.observe(textarea, {
+                    attributes: true,
+                    attributeFilter: ["style"],
+                });
+            }
+
+            let resizeObserver = null;
+            if (typeof ResizeObserver !== "undefined") {
+                resizeObserver = new ResizeObserver(function () {
+                    if (clamping || inputPending) return;
+                    const h = textarea.getBoundingClientRect().height;
+                    if (userResizing) {
+                        if (h > 0) {
+                            stableHeight = h;
+                            syncHighlightLayer();
+                        }
+                        return;
+                    }
+                    if (h > stableHeight + 1) {
+                        enforcePromptHeight();
+                    }
+                });
+                resizeObserver.observe(textarea);
+            }
+
+            lockedPromptTextareas.push({
+                textarea,
+                onInput,
+                onInputCapture,
+                onScroll,
+                onMouseDown,
+                onMouseUp,
+                resizeObserver,
+                styleObserver,
+            });
+        }
+    }
+
     function applyLayout(tab) {
         const settings = gradioApp().getElementById(`${tab}_settings`);
         if (!settings) return;
@@ -370,6 +553,7 @@
     function applyAllLayouts() {
         for (const tab of TABS) {
             layoutPrompts(tab);
+            lockPromptAutoGrow(tab);
             applyLayout(tab);
         }
     }

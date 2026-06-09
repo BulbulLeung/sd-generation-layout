@@ -18,7 +18,7 @@ Reorganizes **txt2img / img2img** generation controls so prompts, dimensions, an
 
 | Item | Description |
 |------|-------------|
-| Side-by-side prompts | Positive and negative prompts displayed side by side, at 2× default height (`12em`), vertically resizable |
+| Side-by-side prompts | Positive and negative prompts displayed side by side, at 2× default height (`12em`); text overflow shows a vertical scrollbar instead of auto-growing; auto-scrolls to the latest line when typing near the bottom (Gradio-like); manually resizable via drag handle |
 | Horizontal dimension row | **txt2img**: width, dimension tools, and height on one row; **img2img**: Resize to / Resize by tabs preserved, same horizontal layout inside Resize to |
 | CFG / Batch on one row | CFG Scale, Batch count, Batch size (and Distilled CFG when visible) merged into one row |
 | Hires fix repositioned | **txt2img**: Hires fix and ADetailer moved out of the accordion area, placed after the Seed block — no need to expand accordions |
