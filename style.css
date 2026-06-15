@@ -403,3 +403,7 @@ label.gen-layout-prompt-highlight-wrap textarea {
 .gen-layout-prompt-lora {
     color: #26c6da;
 }
+
+.gen-layout-prompt-break {
+    color: #f44336;
+}

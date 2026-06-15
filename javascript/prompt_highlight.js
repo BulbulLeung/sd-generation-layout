@@ -13,6 +13,7 @@
     const WILDCARD_DEFAULT_WRAP = "__";
     const RE_LORA_POSITIVE = /<lora:[^:>]+:[\d.]+>/gi;
     const RE_LORA_NEGATIVE = /\(lora:[\d.]+\)/gi;
+    const RE_BREAK = /\bBREAK\b/g;
 
     const STYLE_PROPS = [
         "fontFamily",
@@ -121,6 +122,15 @@
             }
         }
 
+        RE_BREAK.lastIndex = 0;
+        while ((m = RE_BREAK.exec(text)) !== null) {
+            matches.push({
+                start: m.index,
+                end: m.index + m[0].length,
+                type: "break",
+            });
+        }
+
         matches.sort((a, b) => a.start - b.start || b.end - a.end);
 
         const merged = [];
@@ -151,7 +161,9 @@
             const cls =
                 match.type === "wildcard"
                     ? "gen-layout-prompt-wildcard"
-                    : "gen-layout-prompt-lora";
+                    : match.type === "lora"
+                      ? "gen-layout-prompt-lora"
+                      : "gen-layout-prompt-break";
             html += `<span class="${cls}">${chunk}</span>`;
             pos = match.end;
         }
