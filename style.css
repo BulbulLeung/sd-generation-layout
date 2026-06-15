@@ -107,15 +107,158 @@
     width: auto;
 }
 
-.gen-layout-dimensions-row > div[id$="_dimensions_row"].dimensions-tools {
+.gen-layout-dimensions-row > .gen-layout-aspect-controls {
     flex: 0 0 auto;
-    min-width: 1.6em !important;
-    max-width: fit-content;
+    min-width: 0;
     width: auto;
+}
+
+.gen-layout-dimensions-row > div[id$="_dimensions_row"].dimensions-tools {
+    display: none !important;
+}
+
+/* Aspect ratio controls — match Schedule Type shell classes, custom options list */
+.gen-layout-aspect-controls {
+    --gen-layout-aspect-width: 100px;
+    display: flex;
     flex-direction: row;
-    place-content: center;
-    align-self: center;
-    margin-bottom: 0.9em;
+    align-items: flex-end;
+    gap: 0.5em;
+    flex: 0 0 auto;
+    min-width: 0;
+    width: auto;
+    align-self: flex-end;
+    margin-bottom: 0;
+}
+
+.gen-layout-aspect-controls > .gen-layout-aspect-dropdown {
+    flex: 0 0 var(--gen-layout-aspect-width);
+    width: var(--gen-layout-aspect-width) !important;
+    min-width: var(--gen-layout-aspect-width) !important;
+    max-width: var(--gen-layout-aspect-width) !important;
+    margin: 0;
+}
+
+.gen-layout-aspect-dropdown .container > span,
+.gen-layout-aspect-dropdown label > span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gen-layout-aspect-dropdown input {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gen-layout-aspect-dropdown.open {
+    overflow: visible;
+}
+
+ul.gen-layout-aspect-options {
+    display: none;
+    margin: 0;
+    padding: 0.2em 0;
+    list-style: none;
+    box-sizing: border-box;
+    width: var(--gen-layout-aspect-width, 100px);
+    min-width: var(--gen-layout-aspect-width, 100px);
+    max-width: var(--gen-layout-aspect-width, 100px);
+    background: var(--input-background-fill, var(--background-fill-secondary, #2a2a2a));
+    border: var(--input-border-width, 1px) solid var(--input-border-color, #444);
+    border-radius: var(--input-radius, 4px);
+    box-shadow: var(--input-shadow, 0 2px 8px rgba(0, 0, 0, 0.25));
+    white-space: nowrap;
+}
+
+ul.gen-layout-aspect-options li.item,
+ul.gen-layout-aspect-options [role="option"] {
+    padding: 0.3em 0.35em;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+ul.gen-layout-aspect-options li.item:hover,
+ul.gen-layout-aspect-options [role="option"]:hover {
+    background: var(--neutral-100, rgba(255, 255, 255, 0.08));
+}
+
+ul.gen-layout-aspect-options li.item.selected,
+ul.gen-layout-aspect-options [role="option"].selected {
+    background: var(--neutral-100, rgba(255, 255, 255, 0.12));
+}
+
+.dark ul.gen-layout-aspect-options li.item.selected,
+.dark ul.gen-layout-aspect-options [role="option"].selected {
+    background: var(--neutral-900, rgba(0, 0, 0, 0.25));
+}
+
+.gen-layout-swap-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 0.15em;
+    white-space: nowrap;
+}
+
+.gen-layout-swap-toggle-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.gen-layout-swap-toggle-ui {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 2.8em;
+    min-width: 2.8em;
+    min-height: 2.8em;
+    height: auto;
+    padding: 0.3em 0.35em;
+    border-radius: var(--button-large-radius, var(--radius-lg, 8px));
+    background: var(--neutral-700, #444);
+    color: var(--body-text-color-subdued, #aaa);
+    font-size: var(--text-sm, 0.8rem);
+    font-weight: 600;
+    line-height: 1.1;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.gen-layout-swap-toggle-ui::before {
+    content: "Swap";
+    font-weight: 500;
+}
+
+.gen-layout-swap-toggle-ui::after {
+    content: "OFF";
+}
+
+.gen-layout-swap-toggle-input:checked + .gen-layout-swap-toggle-ui {
+    background: var(--color-accent, #f97316);
+    color: #fff;
+}
+
+.gen-layout-swap-toggle-input:checked + .gen-layout-swap-toggle-ui::after {
+    content: "ON";
+}
+
+.gen-layout-swap-toggle-input:focus-visible + .gen-layout-swap-toggle-ui {
+    outline: 2px solid var(--color-accent, #f97316);
+    outline-offset: 2px;
+}
+
+#txt2img_res_switch_btn,
+#img2img_res_switch_btn {
+    display: none !important;
 }
 
 /* img2img: keep Resize to / Resize by tabs; horizontal controls inside Resize to */
@@ -146,6 +289,14 @@
     flex: 1 1 0;
     min-width: 0;
     width: auto;
+}
+
+.gen-layout-img2img-resize-to-row > .gen-layout-aspect-controls {
+    flex: 0 0 auto;
+    min-width: 0;
+    width: auto;
+    align-self: flex-end;
+    margin-bottom: 0;
 }
 
 .gen-layout-img2img-resize-to-row > div[id="img2img_dimensions_row"].dimensions-tools {

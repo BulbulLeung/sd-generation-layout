@@ -19,7 +19,9 @@ Reorganizes **txt2img / img2img** generation controls so prompts, dimensions, an
 | Item | Description |
 |------|-------------|
 | Side-by-side prompts | Positive and negative prompts displayed side by side, at 2× default height (`12em`); text overflow shows a vertical scrollbar instead of auto-growing; auto-scrolls to the latest line when typing near the bottom (Gradio-like); manually resizable via drag handle |
-| Horizontal dimension row | **txt2img**: width, dimension tools, and height on one row; **img2img**: Resize to / Resize by tabs preserved, same horizontal layout inside Resize to |
+| Horizontal dimension row | **txt2img**: aspect ratio, swap toggle, width, and height on one row; **img2img**: Resize to / Resize by tabs preserved, same layout inside Resize to |
+| Aspect ratio lock | Dropdown: Custom, 1:1, 3:2, 4:3, 5:4, 16:9, 21:9 — locked ratios keep width/height in sync when either slider changes |
+| Swap latch toggle | Replaces the default ⇅ button; **ON** swaps width/height and flips the ratio label (e.g. 16:9 → 9:16); **OFF** restores the previous values |
 | CFG / Batch on one row | CFG Scale, Batch count, Batch size (and Distilled CFG when visible) merged into one row |
 | Hires fix repositioned | **txt2img**: Hires fix and ADetailer moved out of the accordion area, placed after the Seed block — no need to expand accordions |
 | Prompt syntax highlighting | Wildcard tokens (default `__name__`) shown in **orange**, LoRA tokens in **cyan**; supports Hires prompt fields |
@@ -81,6 +83,18 @@ If [sd-dynamic-prompts](https://github.com/adieyal/sd-dynamic-prompts) is instal
 
 The insert separator follows the WebUI `extra_networks_add_text_separator` setting (default `, `).
 
+### Aspect ratio and swap
+
+On the width/height row (txt2img and img2img **Resize to**):
+
+| Control | Behavior |
+|---------|----------|
+| **Aspect Ratio** | `Custom` — width and height are independent. Any preset ratio locks the aspect: changing width updates height (and vice versa), snapped to the slider step. |
+| Presets | `1:1`, `3:2`, `4:3`, `5:4`, `16:9`, `21:9` |
+| **Swap** (OFF/ON) | **ON** — swaps width and height values and flips the ratio label (16:9 becomes 9:16). **OFF** — swaps back to restore the previous orientation. |
+
+On load, the dropdown auto-detects the closest preset from the current width/height (including portrait orientations). Pasting a resolution such as `1024x768` switches to **4:3** when it matches.
+
 ### Layout changes summary
 
 **txt2img / img2img (shared):**
@@ -90,13 +104,13 @@ The insert separator follows the WebUI `extra_networks_add_text_separator` setti
 
 **txt2img only:**
 
-- Width, dimension tools, and height merged into `.gen-layout-dimensions-row`.
+- Aspect ratio controls, width, and height merged into `.gen-layout-dimensions-row`.
 - `#txt2img_hr` (Hires fix) and ADetailer accordions moved after Seed.
 
 **img2img only:**
 
 - `#img2img_tabs_resize` kept inside the dimension row.
-- Width, tools, and height inside the Resize to tab arranged horizontally (`.gen-layout-img2img-resize-to-row`).
+- Aspect ratio controls, width, height, and auto-detect button inside the Resize to tab (`.gen-layout-img2img-resize-to-row`).
 
 ---
 
@@ -110,6 +124,7 @@ sd-generation-layout/
 ├── preview-prompts.png           # Figure 1: Wildcard / LoRA syntax highlighting
 ├── preview-settings.png          # Figure 2: Parameter row layout
 └── javascript/
+    ├── aspect_ratio.js           # Aspect ratio dropdown, swap toggle, W/H sync
     ├── sd_generation_layout.js   # Layout DOM reordering
     ├── prompt_highlight.js       # Prompt syntax highlight overlay
     └── prompt_focus.js           # Focus tracking, card insert, Wildcard toggle

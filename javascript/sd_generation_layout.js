@@ -38,19 +38,37 @@
         row.style.maxWidth = "100%";
     }
 
+    function childrenInOrder(parent, children) {
+        const filtered = children.filter(Boolean);
+        if (filtered.length !== parent.children.length) return false;
+        for (let i = 0; i < filtered.length; i++) {
+            if (parent.children[i] !== filtered[i]) return false;
+        }
+        return true;
+    }
+
+    function appendInOrder(parent, children) {
+        const filtered = children.filter(Boolean);
+        const locked = window.genLayoutAspectRatio?.isInteractionLocked?.() === true;
+        const alreadyOrdered = childrenInOrder(parent, filtered);
+        if (locked || alreadyOrdered) return;
+        for (const child of filtered) {
+            parent.appendChild(child);
+        }
+    }
+
     function layoutTxt2imgDimensions(settings) {
         const tab = "txt2img";
         const sizeCol = gradioApp().getElementById(`${tab}_column_size`);
         const batchCol = gradioApp().getElementById(`${tab}_column_batch`);
+        const widthBlock = getBlock(`${tab}_width`);
+        const heightBlock = getBlock(`${tab}_height`);
+        const toolsCol = gradioApp().getElementById(`${tab}_dimensions_row`);
         let row = settings.querySelector(`.gen-layout-dimensions-row[data-tab="${tab}"]`);
 
+        if (!widthBlock || !heightBlock || !toolsCol) return;
+
         if (!row) {
-            const widthBlock = getBlock(`${tab}_width`);
-            const heightBlock = getBlock(`${tab}_height`);
-            const toolsCol = gradioApp().getElementById(`${tab}_dimensions_row`);
-
-            if (!widthBlock || !heightBlock || !toolsCol) return;
-
             const parent = sizeCol?.parentElement || toolsCol.parentElement;
             if (!parent || !settings.contains(parent)) return;
 
@@ -60,14 +78,14 @@
             row.dataset.genLayout = "dimensions";
 
             parent.insertBefore(row, sizeCol || widthBlock.parentElement);
-
-            row.appendChild(widthBlock);
-            row.appendChild(toolsCol);
-            row.appendChild(heightBlock);
         }
+
+        const aspectControls = window.genLayoutAspectRatio?.getOrCreateControls(tab);
+        appendInOrder(row, [aspectControls, widthBlock, heightBlock]);
 
         hidePlaceholderColumn(sizeCol);
         hidePlaceholderColumn(batchCol);
+        hidePlaceholderColumn(toolsCol);
         tightenDimensionsRow(row);
     }
 
@@ -119,10 +137,9 @@
         if (!host) return;
 
         const resizeRow = getOrCreateImg2imgResizeToRow(host);
+        const aspectControls = window.genLayoutAspectRatio?.getOrCreateControls("img2img");
 
-        for (const el of [widthBlock, toolsCol, heightBlock]) {
-            if (el && el.parentElement !== resizeRow) resizeRow.appendChild(el);
-        }
+        appendInOrder(resizeRow, [aspectControls, widthBlock, heightBlock, toolsCol]);
 
         hideEmptyImg2imgResizeColumns(host);
     }
@@ -135,7 +152,10 @@
         if (!tabsEl || !widthBlock) return;
 
         if (row) {
-            for (const el of [widthBlock, heightBlock, toolsCol]) {
+            const aspectControls = gradioApp().querySelector(
+                '.gen-layout-aspect-controls[data-tab="img2img"]',
+            );
+            for (const el of [aspectControls, widthBlock, heightBlock, toolsCol]) {
                 if (el && row.contains(el)) row.removeChild(el);
             }
         }
@@ -556,6 +576,7 @@
             lockPromptAutoGrow(tab);
             applyLayout(tab);
         }
+        window.genLayoutAspectRatio?.wireAll();
     }
 
     onUiLoaded(applyAllLayouts);
