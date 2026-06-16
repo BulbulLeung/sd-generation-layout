@@ -407,3 +407,11 @@ label.gen-layout-prompt-highlight-wrap textarea {
 .gen-layout-prompt-break {
     color: #f44336;
 }
+
+.gen-layout-prompt-paren {
+    color: #ffeb3b;
+}
+
+.gen-layout-prompt-paren-unclosed {
+    color: #f44336;
+}

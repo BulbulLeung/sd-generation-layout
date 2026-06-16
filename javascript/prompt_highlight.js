@@ -88,6 +88,31 @@
         return id.includes("neg");
     }
 
+    function collectParenthesisMatches(text) {
+        const matches = [];
+        const stack = [];
+        for (let i = 0; i < text.length; i++) {
+            if (text[i] === "\\" && i + 1 < text.length) {
+                i++;
+                continue;
+            }
+            if (text[i] === "(") {
+                stack.push(i);
+            } else if (text[i] === ")") {
+                if (stack.length > 0) {
+                    const start = stack.pop();
+                    matches.push({ start, end: i + 1, type: "paren" });
+                } else {
+                    matches.push({ start: i, end: i + 1, type: "paren-orphan" });
+                }
+            }
+        }
+        for (const start of stack) {
+            matches.push({ start, end: text.length, type: "paren-unclosed" });
+        }
+        return matches;
+    }
+
     function collectMatches(text, isNegative) {
         const matches = [];
 
@@ -131,6 +156,8 @@
             });
         }
 
+        matches.push(...collectParenthesisMatches(text));
+
         matches.sort((a, b) => a.start - b.start || b.end - a.end);
 
         const merged = [];
@@ -158,12 +185,13 @@
             }
 
             const chunk = escapeHtml(text.slice(match.start, match.end));
-            const cls =
-                match.type === "wildcard"
-                    ? "gen-layout-prompt-wildcard"
-                    : match.type === "lora"
-                      ? "gen-layout-prompt-lora"
-                      : "gen-layout-prompt-break";
+            let cls;
+            if (match.type === "wildcard") cls = "gen-layout-prompt-wildcard";
+            else if (match.type === "lora") cls = "gen-layout-prompt-lora";
+            else if (match.type === "break") cls = "gen-layout-prompt-break";
+            else if (match.type === "paren-unclosed" || match.type === "paren-orphan")
+                cls = "gen-layout-prompt-paren-unclosed";
+            else cls = "gen-layout-prompt-paren";
             html += `<span class="${cls}">${chunk}</span>`;
             pos = match.end;
         }
