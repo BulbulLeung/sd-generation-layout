@@ -232,6 +232,8 @@
             inner.style[prop] = cs[prop];
         }
         inner.style.removeProperty("color");
+        inner.style.width = `${textarea.clientWidth}px`;
+        inner.style.right = "auto";
     }
 
     function syncBackdropScroll(textarea, inner) {
