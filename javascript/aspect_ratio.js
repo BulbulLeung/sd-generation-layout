@@ -691,15 +691,12 @@
         if (controls.dataset.genLayoutAspectBound === tab) return;
         controls.dataset.genLayoutAspectBound = tab;
 
-        const width = readDim(tab, "width");
-        const height = readDim(tab, "height");
-        const detected = detectRatioState(width, height);
         applyRatioState(
             state,
             ui,
             swapToggle,
-            detected.ratioKey,
-            detected.swapped,
+            state.ratioKey,
+            state.swapped,
             true,
         );
 
