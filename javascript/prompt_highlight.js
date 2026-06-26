@@ -54,6 +54,27 @@
     ];
 
     const boundHighlights = [];
+    const lastPromptScroll = new WeakMap();
+
+    function rememberPromptScroll(textarea) {
+        lastPromptScroll.set(textarea, {
+            top: textarea.scrollTop,
+            left: textarea.scrollLeft,
+        });
+    }
+
+    function restorePromptScrollIfNeeded(textarea) {
+        const saved = lastPromptScroll.get(textarea);
+        if (!saved || saved.top <= 0) {
+            return false;
+        }
+        if (textarea.scrollTop + 2 < saved.top) {
+            textarea.scrollTop = saved.top;
+            textarea.scrollLeft = saved.left;
+            return true;
+        }
+        return false;
+    }
 
     function getWildcardWrap() {
         if (
@@ -297,9 +318,22 @@
             refreshHighlight(textarea, inner, layer, isNegative);
         };
 
-        textarea.addEventListener("input", update);
+        rememberPromptScroll(textarea);
+
+        textarea.addEventListener("input", function () {
+            update();
+            restorePromptScrollIfNeeded(textarea);
+            syncBackdropScroll(textarea, inner);
+            requestAnimationFrame(function () {
+                restorePromptScrollIfNeeded(textarea);
+                syncBackdropScroll(textarea, inner);
+            });
+        });
         for (const target of scrollTargets) {
-            target.addEventListener("scroll", update);
+            target.addEventListener("scroll", function () {
+                rememberPromptScroll(textarea);
+                update();
+            });
         }
 
         if (typeof ResizeObserver !== "undefined") {

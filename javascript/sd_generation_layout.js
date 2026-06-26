@@ -378,7 +378,6 @@
             if (!entry.textarea.isConnected) {
                 entry.textarea.removeEventListener("input", entry.onInputCapture, true);
                 entry.textarea.removeEventListener("input", entry.onInput);
-                entry.textarea.removeEventListener("scroll", entry.onScroll);
                 entry.textarea.removeEventListener("mousedown", entry.onMouseDown);
                 entry.textarea.removeEventListener("mouseup", entry.onMouseUp);
                 document.removeEventListener("mouseup", entry.onMouseUp);
@@ -407,9 +406,6 @@
             let clamping = false;
             let inputPending = false;
             let userResizing = false;
-            let pendingWasNearBottom = true;
-            let userHasScrolledUp = false;
-            let previousScrollTop = textarea.scrollTop;
 
             const syncHighlightLayer = function () {
                 const layer = textarea.closest(".gen-layout-prompt-highlight-layer");
@@ -419,42 +415,22 @@
             };
 
             const enforcePromptHeight = function () {
+                const prevScrollTop = textarea.scrollTop;
+                const prevScrollLeft = textarea.scrollLeft;
                 clamping = true;
                 textarea.style.setProperty("height", stableHeight + "px", "important");
                 textarea.style.removeProperty("max-height");
                 textarea.style.setProperty("overflow-y", "scroll", "important");
                 syncHighlightLayer();
+                textarea.scrollTop = prevScrollTop;
+                textarea.scrollLeft = prevScrollLeft;
                 clamping = false;
-            };
-
-            const updateOverflowAndScroll = function (wasNearBottom) {
-                textarea.style.setProperty("overflow-y", "scroll", "important");
-
-                if (!userHasScrolledUp && wasNearBottom) {
-                    textarea.scrollTop = textarea.scrollHeight;
-                }
-            };
-
-            const onScroll = function () {
-                const currentScrollTop = textarea.scrollTop;
-                if (currentScrollTop < previousScrollTop) {
-                    userHasScrolledUp = true;
-                }
-                previousScrollTop = currentScrollTop;
-
-                const maxScrollTop = textarea.scrollHeight - textarea.clientHeight;
-                if (currentScrollTop >= maxScrollTop) {
-                    userHasScrolledUp = false;
-                }
             };
 
             const runInputLock = function () {
                 const lockHeight = stableHeight;
-                pendingWasNearBottom =
-                    textarea.offsetHeight + textarea.scrollTop > textarea.scrollHeight - 100;
                 stableHeight = lockHeight;
                 enforcePromptHeight();
-                updateOverflowAndScroll(pendingWasNearBottom);
             };
 
             const onInputCapture = function () {
@@ -494,17 +470,14 @@
                 const h = textarea.getBoundingClientRect().height;
                 if (h > 0) stableHeight = h;
                 enforcePromptHeight();
-                updateOverflowAndScroll(true);
             };
 
             textarea.addEventListener("input", onInputCapture, true);
             textarea.addEventListener("input", onInput);
-            textarea.addEventListener("scroll", onScroll);
             textarea.addEventListener("mousedown", onMouseDown);
             textarea.addEventListener("mouseup", onMouseUp);
             document.addEventListener("mouseup", onMouseUp);
             enforcePromptHeight();
-            updateOverflowAndScroll(true);
 
             let styleObserver = null;
             if (typeof MutationObserver !== "undefined") {
@@ -542,7 +515,6 @@
                 textarea,
                 onInput,
                 onInputCapture,
-                onScroll,
                 onMouseDown,
                 onMouseUp,
                 resizeObserver,
