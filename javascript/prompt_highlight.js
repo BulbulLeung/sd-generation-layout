@@ -11,8 +11,8 @@
     ];
 
     const WILDCARD_DEFAULT_WRAP = "__";
-    const RE_LORA_POSITIVE = /<lora:[^:>]+:[\d.]+>/gi;
-    const RE_LORA_NEGATIVE = /\(lora:[\d.]+\)/gi;
+    const RE_LORA_POSITIVE = /<lora:[^:>]+:[\d.]+(?::[^>]+)?>/gi;
+    const RE_LORA_NEGATIVE = /\(lora:[^:)]+:[\d.]+(?::[^)]+)?\)/gi;
     const RE_BREAK = /\bBREAK\b/g;
 
     const STYLE_PROPS = [
