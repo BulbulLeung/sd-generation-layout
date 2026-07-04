@@ -415,3 +415,216 @@ label.gen-layout-prompt-highlight-wrap textarea {
 .gen-layout-prompt-paren-unclosed {
     color: #f44336;
 }
+
+/* GPU Meter */
+#txt2img_toprow.gen-layout-toprow-with-meter,
+#img2img_toprow.gen-layout-toprow-with-meter {
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 0.5em;
+}
+
+#txt2img_toprow.gen-layout-toprow-with-meter > #txt2img_prompt_container,
+#img2img_toprow.gen-layout-toprow-with-meter > #img2img_prompt_container {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#txt2img_toprow.gen-layout-toprow-with-meter > #txt2img_actions_column,
+#img2img_toprow.gen-layout-toprow-with-meter > #img2img_actions_column {
+    flex: 0 0 auto;
+}
+
+.gen-layout-gpu-meter-col {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    width: min(15em, 100%);
+    max-width: 15em;
+    min-width: 11.5em;
+    align-self: flex-start;
+    box-sizing: border-box;
+}
+
+.gen-layout-gpu-meter-col.gen-layout-gpu-unavailable {
+    display: none !important;
+}
+
+.gen-layout-results-header-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.5em;
+    width: 100%;
+}
+
+.gen-layout-results-header-row > #txt2img_generate_box,
+.gen-layout-results-header-row > #img2img_generate_box {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.gen-layout-gpu-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    gap: 0.55em;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0.6em 0.65em;
+    border-radius: 0.55em;
+    background: color-mix(in srgb, var(--block-background-fill, #2a2a2a) 88%, #000 12%);
+    border: 1px solid color-mix(in srgb, var(--border-color-primary, #444) 70%, transparent);
+    box-sizing: border-box;
+    font-size: 0.88em;
+    line-height: 1.25;
+    justify-content: space-between;
+}
+
+.gen-layout-gpu-card[data-state="offline"] {
+    opacity: 0.75;
+}
+
+.gen-layout-gpu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5em;
+}
+
+.gen-layout-gpu-name {
+    font-weight: 700;
+    font-size: 1.05em;
+    color: var(--body-text-color, #fff);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gen-layout-gpu-index {
+    flex: 0 0 auto;
+    padding: 0.12em 0.5em;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--block-background-fill, #333) 60%, #555 40%);
+    color: var(--body-text-color, #fff);
+    font-size: 0.92em;
+    font-weight: 600;
+}
+
+.gen-layout-gpu-body {
+    display: grid;
+    grid-template-columns: 0.9fr 1fr;
+    gap: 0.55em 0.55em;
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: space-between;
+}
+
+.gen-layout-gpu-col-left,
+.gen-layout-gpu-col-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.65em;
+    min-width: 0;
+    height: 100%;
+}
+
+.gen-layout-gpu-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15em;
+    min-width: 0;
+}
+
+.gen-layout-gpu-metric-head {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    min-width: 0;
+}
+
+.gen-layout-gpu-icon {
+    display: inline-flex;
+    width: 1.1em;
+    height: 1.1em;
+    flex: 0 0 auto;
+    color: #9aa0a6;
+}
+
+.gen-layout-gpu-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.gen-layout-gpu-label {
+    color: #9aa0a6;
+    font-size: 0.95em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gen-layout-gpu-value {
+    font-weight: 700;
+    font-size: 1.2em;
+    color: var(--body-text-color, #fff);
+}
+
+.gen-layout-gpu-accent-temp {
+    color: #ff9800;
+}
+
+.gen-layout-gpu-metric-temp .gen-layout-gpu-icon {
+    color: #ff9800;
+}
+
+.gen-layout-gpu-metric-clock .gen-layout-gpu-icon {
+    color: #ab47bc;
+}
+
+.gen-layout-gpu-metric-power .gen-layout-gpu-icon {
+    color: #fdd835;
+}
+
+.gen-layout-gpu-metric-memory .gen-layout-gpu-icon {
+    color: #42a5f5;
+}
+
+.gen-layout-gpu-subvalue {
+    color: #9aa0a6;
+    font-size: 0.92em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gen-layout-gpu-bar {
+    width: 100%;
+    height: 0.45em;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--block-background-fill, #222) 50%, #111 50%);
+    overflow: hidden;
+}
+
+.gen-layout-gpu-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    transition: width 0.3s ease;
+}
+
+.gen-layout-gpu-bar-load > span {
+    background: linear-gradient(90deg, #ff9800, #ffb74d);
+}
+
+.gen-layout-gpu-bar-memory > span {
+    background: linear-gradient(90deg, #1e88e5, #42a5f5);
+}
+
+@media screen and (max-width: 1200px) {
+    .gen-layout-gpu-meter-col {
+        display: none !important;
+    }
+}
