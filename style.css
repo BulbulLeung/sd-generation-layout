@@ -416,6 +416,14 @@ label.gen-layout-prompt-highlight-wrap textarea {
     color: #f44336;
 }
 
+.gen-layout-prompt-brace {
+    color: #b57cff;
+}
+
+.gen-layout-prompt-brace-error {
+    color: #f44336;
+}
+
 /* GPU Meter */
 #txt2img_toprow.gen-layout-toprow-with-meter,
 #img2img_toprow.gen-layout-toprow-with-meter {

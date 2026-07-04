@@ -134,6 +134,59 @@
         return matches;
     }
 
+    function collectBraceCharMatches(text) {
+        const matches = [];
+        const openStack = [];
+
+        for (let i = 0; i < text.length; i++) {
+            if (text[i] === "\\" && i + 1 < text.length) {
+                i++;
+                continue;
+            }
+
+            const ch = text[i];
+            if (ch === "{") {
+                openStack.push(i);
+            } else if (ch === "}") {
+                if (openStack.length > 0) {
+                    const openIdx = openStack.pop();
+                    matches.push({
+                        start: openIdx,
+                        end: openIdx + 1,
+                        type: "brace-ok",
+                    });
+                    matches.push({
+                        start: i,
+                        end: i + 1,
+                        type: "brace-ok",
+                    });
+                } else {
+                    matches.push({
+                        start: i,
+                        end: i + 1,
+                        type: "brace-error",
+                    });
+                }
+            } else if (ch === "|") {
+                matches.push({
+                    start: i,
+                    end: i + 1,
+                    type: openStack.length > 0 ? "brace-ok" : "brace-error",
+                });
+            }
+        }
+
+        for (const openIdx of openStack) {
+            matches.push({
+                start: openIdx,
+                end: openIdx + 1,
+                type: "brace-error",
+            });
+        }
+
+        return matches;
+    }
+
     function collectMatches(text, isNegative) {
         const matches = [];
 
@@ -177,6 +230,8 @@
             });
         }
 
+        matches.push(...collectBraceCharMatches(text));
+
         matches.push(...collectParenthesisMatches(text));
 
         matches.sort((a, b) => a.start - b.start || b.end - a.end);
@@ -210,6 +265,9 @@
             if (match.type === "wildcard") cls = "gen-layout-prompt-wildcard";
             else if (match.type === "lora") cls = "gen-layout-prompt-lora";
             else if (match.type === "break") cls = "gen-layout-prompt-break";
+            else if (match.type === "brace-ok") cls = "gen-layout-prompt-brace";
+            else if (match.type === "brace-error")
+                cls = "gen-layout-prompt-brace-error";
             else if (match.type === "paren-unclosed" || match.type === "paren-orphan")
                 cls = "gen-layout-prompt-paren-unclosed";
             else cls = "gen-layout-prompt-paren";
