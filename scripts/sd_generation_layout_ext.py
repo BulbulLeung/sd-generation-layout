@@ -1,4 +1,11 @@
+import os
+import sys
+
 from modules import errors, scripts
+
+_SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
 
 try:
     import hardware_stats  # noqa: F401 — registers on_app_started routes
